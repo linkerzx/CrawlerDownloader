@@ -35,7 +35,7 @@ class configuration():
 
 config = configuration()
 
-class ExampleEntryBoxFrame(Frame):
+class EntryBoxFrame(Frame):
     def __init__(self, parent):
         Frame.__init__(self, parent)   
         self.parent = parent
@@ -55,7 +55,7 @@ class ExampleEntryBoxFrame(Frame):
     def get(self):
         return self.area.get()
 
-class ExampleListBoxFrame(Frame):
+class ListBoxFrame(Frame):
     def __init__(self, parent):
         Frame.__init__(self, parent)   
         self.parent = parent
@@ -81,7 +81,7 @@ class ExampleListBoxFrame(Frame):
         x = self.area.curselection()
         return self.area.data[x[0]]
 
-class Example(Frame):
+class Mainframe(Frame):
     def __init__(self, parent):
         Frame.__init__(self, parent)   
         self.parent = parent  
@@ -106,20 +106,20 @@ class Example(Frame):
         cbtn = Button(self, text="Download", command=self.download_url)
         cbtn.grid(row=2, column=3, pady=4)
         
-        self.ExampleEB = ExampleEntryBoxFrame(self)
-        self.ExampleLB = ExampleListBoxFrame(self)
+        self.EB = EntryBoxFrame(self)
+        self.LB = ListBoxFrame(self)
     def update_url_list(self):
-        url = self.ExampleEB.get()
-        self.ExampleLB.gen_clean()
-        self.ExampleLB.gen_url_listbox(url, "mp4")
+        url = self.EB.get()
+        self.LB.gen_clean()
+        self.LB.gen_url_listbox(url, "mp4")
     def download_url(self):
-        selection = self.ExampleLB.get_selection()
+        selection = self.LB.get_selection()
         fast_dl(selection)
 
 def main():
     root = Tk()
     root.geometry("550x400+300+300")
-    app = Example(root)
+    app = Mainframe(root)
     root.mainloop()  
 
 
