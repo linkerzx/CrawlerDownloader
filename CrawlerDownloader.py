@@ -41,13 +41,6 @@ def thread_dl(inputurl):
         )
     dlThread.start()
 
-class configuration():
-    def __init__(self):
-        self._tf_height = 2
-        self._tf_width = 50
-
-config = configuration()
-
 class EntryBoxFrame(Frame):
     def __init__(self, parent):
         Frame.__init__(self, parent)   
@@ -108,6 +101,7 @@ class Dropdownframe(Frame):
     def get_selection(self):
         return self.var.get()
 
+
 class Mainframe(Frame):
     def __init__(self, parent):
         Frame.__init__(self, parent)   
@@ -122,8 +116,6 @@ class Mainframe(Frame):
 
         self.columnconfigure(1, weight=1)
         self.columnconfigure(3, pad=7)
-        #self.rowconfigure(3, weight=1)
-        #self.rowconfigure(6, pad=7)
         
         lbl = Label(self, text="Placeholder")
         lbl.grid(sticky=W, pady=4, padx=5)
@@ -132,6 +124,7 @@ class Mainframe(Frame):
         abtn.grid(row=2, column=3)
         cbtn = Button(self, text="Download", command=self.download_url)
         cbtn.grid(row=3, column=3, pady=0)
+        
         self.dd = Dropdownframe(self)
         self.EB = EntryBoxFrame(self)
         self.LB = ListBoxFrame(self)
