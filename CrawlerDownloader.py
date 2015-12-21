@@ -129,7 +129,7 @@ class Mainframe(Frame):
         self.LB.gen_url_listbox(url, fileformat)
     def download_url(self):
         selection = self.LB.get_selection()
-        fast_dl(selection)
+        thread_dl(selection)
 
 def main():
     root = Tk()
