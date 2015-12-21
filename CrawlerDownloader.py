@@ -1,23 +1,18 @@
-import os, re, requests, json, threading
-from ttk import Frame, Button, Label, Style, Combobox
-from tkFileDialog import askdirectory
 from Tkinter import * 
+from ttk import Frame, Button, Label, Style
+from tkFileDialog import askdirectory
+import os, re, requests, json
 
 def crawl(url, fileformat):
-	x = requests.get(url)
-	z = [y for y in x]
-	z2 = ''.join(z)
-	format_url = '(http[^\"|^\']+.' + fileformat + '([^\"|^\'|^\b]+)?)'
-	output = re.findall(format_url , z2)
-	return [x[0] for x in output]
-
-def crawler(url, fileformat):
-    x = threading.Thread(name='crawl', target=crawl, args=(url,fileformat))
-    x.start()
-    return x
+    x = requests.get(url)
+    z = [y for y in x]
+    z2 = ''.join(z)
+    format_url = '(http[^\"|^\']+.' + fileformat + '([^\"|^\'|^\b]+)?)'
+    output = re.findall(format_url , z2)
+    return [x[0] for x in output]
 
 def url_cleanup(url):
-	return json.loads('"'+ url + '"')
+    return json.loads('"'+ url + '"')
 
 def download_file(url):
     local_filename = url.split('/')[-1]
@@ -30,16 +25,8 @@ def download_file(url):
     return local_filename
 
 def fast_dl(inputurl):
-	url = url_cleanup(inputurl)
-	return download_file(url)
-
-def thread_dl(inputurl):
-    dlThread = threading.Thread(
-        name='downloader', 
-        target=fast_dl,
-        args=(''.join(inputurl), )
-        )
-    dlThread.start()
+    url = url_cleanup(inputurl)
+    return download_file(url)
 
 class configuration():
     def __init__(self):
@@ -94,17 +81,19 @@ class ListBoxFrame(Frame):
         x = self.area.curselection()
         return self.area.data[x[0]]
 
-class Dropdownframe(Frame):
+class DropdownFrame(Frame):
     def __init__(self, parent):
         Frame.__init__(self, parent)   
         self.parent = parent  
         self.initUI()
     def initUI(self):
-        var = StringVar(self.parent)
-        var.set('mp4')
-        choices = ['mp4', 'jpg', 'jpeg', 'png','gif']
-        self.area = OptionMenu(self.parent, var, *choices)
+        self.var = StringVar(self.parent)
+        self.var.set('mp4')
+        self.choices = ['mp4', 'jpg', 'jpeg', 'png','gif']
+        self.area = OptionMenu(self.parent, self.var, *self.choices)
         self.area.grid(row=1, column=3)
+    def get_selection(self):
+        return self.var.get()
 
 class Mainframe(Frame):
     def __init__(self, parent):
@@ -120,8 +109,8 @@ class Mainframe(Frame):
 
         self.columnconfigure(1, weight=1)
         self.columnconfigure(3, pad=7)
-        #self.rowconfigure(3, weight=1)
-        #self.rowconfigure(6, pad=7)
+        self.rowconfigure(3, weight=1)
+        self.rowconfigure(5, pad=7)
         
         lbl = Label(self, text="Placeholder")
         lbl.grid(sticky=W, pady=4, padx=5)
@@ -129,21 +118,22 @@ class Mainframe(Frame):
         abtn = Button(self, text="Fetch", command=self.update_url_list)
         abtn.grid(row=2, column=3)
         cbtn = Button(self, text="Download", command=self.download_url)
-        cbtn.grid(row=3, column=3, pady=0)
-        self.dd = Dropdownframe(self)
+        cbtn.grid(row=3, column=3, pady=4)
+        self.dd = DropdownFrame(self)
         self.EB = EntryBoxFrame(self)
         self.LB = ListBoxFrame(self)
     def update_url_list(self):
         url = self.EB.get()
+        fileformat = self.dd.get_selection()
         self.LB.gen_clean()
-        self.LB.gen_url_listbox(url, "mp4")
+        self.LB.gen_url_listbox(url, fileformat)
     def download_url(self):
         selection = self.LB.get_selection()
-        thread_dl(selection)
+        fast_dl(selection)
 
 def main():
     root = Tk()
-    root.geometry("550x400+300+300")
+    root.geometry("550x250+300+300")
     app = Mainframe(root)
     root.mainloop()  
 
