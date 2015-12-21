@@ -1,7 +1,7 @@
-from Tkinter import * 
-from ttk import Frame, Button, Label, Style
+import os, re, requests, json, threading
+from ttk import Frame, Button, Label, Style, Combobox
 from tkFileDialog import askdirectory
-import os, re, requests, json
+from Tkinter import * 
 
 def crawl(url, fileformat):
 	x = requests.get(url)
@@ -10,6 +10,11 @@ def crawl(url, fileformat):
 	format_url = '(http[^\"|^\']+.' + fileformat + '([^\"|^\'|^\b]+)?)'
 	output = re.findall(format_url , z2)
 	return [x[0] for x in output]
+
+def crawler(url, fileformat):
+    x = threading.Thread(name='crawl', target=crawl, args=(url,fileformat))
+    x.start()
+    return x
 
 def url_cleanup(url):
 	return json.loads('"'+ url + '"')
@@ -27,6 +32,14 @@ def download_file(url):
 def fast_dl(inputurl):
 	url = url_cleanup(inputurl)
 	return download_file(url)
+
+def thread_dl(inputurl):
+    dlThread = threading.Thread(
+        name='downloader', 
+        target=fast_dl,
+        args=(''.join(inputurl), )
+        )
+    dlThread.start()
 
 class configuration():
     def __init__(self):
@@ -81,6 +94,18 @@ class ListBoxFrame(Frame):
         x = self.area.curselection()
         return self.area.data[x[0]]
 
+class Dropdownframe(Frame):
+    def __init__(self, parent):
+        Frame.__init__(self, parent)   
+        self.parent = parent  
+        self.initUI()
+    def initUI(self):
+        var = StringVar(self.parent)
+        var.set('mp4')
+        choices = ['mp4', 'jpg', 'jpeg', 'png','gif']
+        self.area = OptionMenu(self.parent, var, *choices)
+        self.area.grid(row=1, column=3)
+
 class Mainframe(Frame):
     def __init__(self, parent):
         Frame.__init__(self, parent)   
@@ -95,17 +120,17 @@ class Mainframe(Frame):
 
         self.columnconfigure(1, weight=1)
         self.columnconfigure(3, pad=7)
-        self.rowconfigure(3, weight=1)
-        self.rowconfigure(5, pad=7)
+        #self.rowconfigure(3, weight=1)
+        #self.rowconfigure(6, pad=7)
         
         lbl = Label(self, text="Placeholder")
         lbl.grid(sticky=W, pady=4, padx=5)
         
         abtn = Button(self, text="Fetch", command=self.update_url_list)
-        abtn.grid(row=1, column=3)
+        abtn.grid(row=2, column=3)
         cbtn = Button(self, text="Download", command=self.download_url)
-        cbtn.grid(row=2, column=3, pady=4)
-        
+        cbtn.grid(row=3, column=3, pady=0)
+        self.dd = Dropdownframe(self)
         self.EB = EntryBoxFrame(self)
         self.LB = ListBoxFrame(self)
     def update_url_list(self):
@@ -114,7 +139,7 @@ class Mainframe(Frame):
         self.LB.gen_url_listbox(url, "mp4")
     def download_url(self):
         selection = self.LB.get_selection()
-        fast_dl(selection)
+        thread_dl(selection)
 
 def main():
     root = Tk()
