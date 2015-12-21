@@ -28,12 +28,13 @@ def fast_dl(inputurl):
     url = url_cleanup(inputurl)
     return download_file(url)
 
-class configuration():
-    def __init__(self):
-        self._tf_height = 2
-        self._tf_width = 50
-
-config = configuration()
+def thread_dl(inputurl):
+    dlThread = threading.Thread(
+        name='downloader', 
+        target=fast_dl,
+        args=(''.join(inputurl), )
+        )
+    dlThread.start()
 
 class EntryBoxFrame(Frame):
     def __init__(self, parent):
