@@ -126,35 +126,6 @@ class DropdownFrame(Frame):
     def get_selection(self):
         return self.var.get()
 
-class StatusIndicator(Mainframe):
-    def __init__(self, parent):
-        self.current = 0
-        self.parent = parent
-    def get(self):
-        return self.current
-    def get_text(self):
-        if self.current == 0:
-            return "~Placeholder"
-        if self.current == 1: 
-            return "Crawling Finished"
-        if self.current == 2:
-            return "Downloading"
-    def set(self, num):
-        self.current = num
-    def check_download(self, urlfile):
-        while(urlfile.thread.is_alive()):
-            s = int(urlfile.size)/1024 if urlfile.size else "N/A"
-            mytext = str(urlfile.downloaded/1024) + "/" + str(s) +  " KB Downloaded"
-            self.parent.lbl['bottom'].config(text=mytext)
-            time.sleep(1)
-        self.parent.lbl['bottom'].config(text="File Downloaded")
-    def thread_check_dl(self, urlfile):
-        self.thread = threading.Thread(
-            name='check_download',
-            target=self.check_download,
-            args=(urlfile,)
-            )
-        self.thread.start()
 
 class Mainframe(Frame):
     def __init__(self, parent):
@@ -210,6 +181,36 @@ class Mainframe(Frame):
         if(mstatus == 2):
             self.status.thread_check_dl(self.urlfile)
         self.lbl['bottom'].config(text=mytext)
+
+class StatusIndicator(Mainframe):
+    def __init__(self, parent):
+        self.current = 0
+        self.parent = parent
+    def get(self):
+        return self.current
+    def get_text(self):
+        if self.current == 0:
+            return "~Placeholder"
+        if self.current == 1: 
+            return "Crawling Finished"
+        if self.current == 2:
+            return "Downloading"
+    def set(self, num):
+        self.current = num
+    def check_download(self, urlfile):
+        while(urlfile.thread.is_alive()):
+            s = int(urlfile.size)/1024 if urlfile.size else "N/A"
+            mytext = str(urlfile.downloaded/1024) + "/" + str(s) +  " KB Downloaded"
+            self.parent.lbl['bottom'].config(text=mytext)
+            time.sleep(1)
+        self.parent.lbl['bottom'].config(text="File Downloaded")
+    def thread_check_dl(self, urlfile):
+        self.thread = threading.Thread(
+            name='check_download',
+            target=self.check_download,
+            args=(urlfile,)
+            )
+        self.thread.start()
 
 def main():
     root = Tk()
