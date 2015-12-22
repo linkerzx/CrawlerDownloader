@@ -1,45 +1,69 @@
-import os, re, requests, json, threading
+import os, re, requests, json, threading, urllib
 from ttk import Frame, Button, Label, Style, Combobox
 from tkFileDialog import askdirectory
 from Tkinter import * 
 
-def crawl(url, fileformat):
-	x = requests.get(url)
-	z = [y for y in x]
-	z2 = ''.join(z)
-	format_url = '(http[^\"|^\']+.' + fileformat + '([^\"|^\'|^\b]+)?)'
-	output = re.findall(format_url , z2)
-	return [x[0] for x in output]
-
-def crawler(url, fileformat):
-    x = threading.Thread(name='crawl', target=crawl, args=(url,fileformat))
-    x.start()
-    return x
-
 def url_cleanup(url):
-	return json.loads('"'+ url + '"')
+    return json.loads('"'+ url + '"')
 
-def download_file(url):
-    local_filename = url.split('/')[-1]
-    r = requests.get(url, stream=True)
-    with open(local_filename, 'wb') as f:
-        for chunk in r.iter_content(chunk_size=1024): 
-            if chunk: 
-                f.write(chunk)
-                f.flush()
-    return local_filename
+class urlfile():
+    def __init__(self, url):
+        self.url = url
+        self.clean_url = url_cleanup(self.url)
+        self.downloaded = 0
+        self.size = None
+        self.initThread = threading.Thread(
+            name='urlfile_init',
+            target=self.init
+            )
+        self.initThread.start()
+    def init(self):
+        site = urllib.urlopen(self.clean_url)
+        meta = site.info()
+        self.size = meta.getheaders("Content-Length")[0]
+        site.close()
+    def download(self):
+        local_filename = self.clean_url.split('/')[-1]
+        r = requests.get(self.clean_url, stream=True)
+        with open(local_filename, 'wb') as f:
+            self.downloaded=0;
+            chunk_size = 1024;
+            for chunk in r.iter_content(chunk_size=chunk_size): 
+                if chunk: 
+                    f.write(chunk)
+                    f.flush()
+                    self.downloaded+=chunk_size;
+        return local_filename
+    def threaded_download(self):
+        dlThread = threading.Thread(
+            name='downloader', 
+            target=self.download,
+            )
+        dlThread.start()
 
-def fast_dl(inputurl):
-	url = url_cleanup(inputurl)
-	return download_file(url)
-
-def thread_dl(inputurl):
-    dlThread = threading.Thread(
-        name='downloader', 
-        target=fast_dl,
-        args=(''.join(inputurl), )
-        )
-    dlThread.start()
+class urlcrawl():
+    def __init__(self, url, fileformat):
+        self.url = url
+        self.fileformat = fileformat
+        self.thread = None
+        self.crawlResults = None
+    def crawl(self):
+        urlrequest = requests.get(url_cleanup(self.url))
+        urlRequestResult = ''.join([y for y in urlrequest])
+        format_url = '(http[^\"|^\']+.' \
+            + self.fileformat \
+            + '([^\"|^\'|^\b]+)?)'
+        self.crawlResults = re.findall(format_url , urlRequestResult)
+        return [x[0] for x in self.crawlResults]
+    def threaded_crawl(self):
+        self.thread = threading.Thread(
+            name='crawl', 
+            target=self.crawl, 
+            )
+        self.thread.start()
+        while(self.thread.is_alive()):
+            x = None
+        return [x[0] for x in self.crawlResults]
 
 class EntryBoxFrame(Frame):
     def __init__(self, parent):
@@ -80,14 +104,15 @@ class ListBoxFrame(Frame):
     def gen_clean(self):
         self.area.delete(0, END)
     def gen_url_listbox(self, url, fileformat):
-        self.area.data = crawl(url, fileformat)
+        crawl = urlcrawl(url, fileformat)
+        self.area.data = crawl.threaded_crawl() 
         for item in self.area.data:
             self.area.insert(END, item)
     def get_selection(self):
         x = self.area.curselection()
         return self.area.data[x[0]]
 
-class Dropdownframe(Frame):
+class DropdownFrame(Frame):
     def __init__(self, parent):
         Frame.__init__(self, parent)   
         self.parent = parent  
@@ -101,11 +126,26 @@ class Dropdownframe(Frame):
     def get_selection(self):
         return self.var.get()
 
+class StatusIndicator():
+    def __init__(self):
+        self.current = 0
+    def get(self):
+        return self.current
+    def get_text(self):
+        if self.current == 0:
+            return "~Placeholder"
+        if self.current == 1: 
+            return "Crawling Finished"
+        if self.current == 2:
+            return "Downloading"
+    def set(self, num):
+        self.current = num
 
 class Mainframe(Frame):
     def __init__(self, parent):
         Frame.__init__(self, parent)   
         self.parent = parent  
+        self.lbl = {}
         self.initUI()
         
     def initUI(self):
@@ -117,25 +157,42 @@ class Mainframe(Frame):
         self.columnconfigure(1, weight=1)
         self.columnconfigure(3, pad=7)
         
-        lbl = Label(self, text="Placeholder")
-        lbl.grid(sticky=W, pady=4, padx=5)
-        
+        self.lbl['top'] = Label(self, text="Placeholder")
+        self.lbl['top'].grid(sticky=W, pady=4, padx=5)        
+
         abtn = Button(self, text="Fetch", command=self.update_url_list)
         abtn.grid(row=2, column=3)
         cbtn = Button(self, text="Download", command=self.download_url)
         cbtn.grid(row=3, column=3, pady=0)
-        
-        self.dd = Dropdownframe(self)
+
+        self.dd = DropdownFrame(self)
         self.EB = EntryBoxFrame(self)
         self.LB = ListBoxFrame(self)
+        self.lbl['bottom'] = Label(self, text="""~ Placeholder""")
+        self.lbl['bottom'].grid(            
+            row=8, 
+            column=0, 
+            columnspan=2, 
+            rowspan=4, 
+            padx=5, 
+            sticky=E+W+S+N
+        )
+        self.status = StatusIndicator()
     def update_url_list(self):
         url = self.EB.get()
         fileformat = self.dd.get_selection()
         self.LB.gen_clean()
         self.LB.gen_url_listbox(url, fileformat)
+        self.mark_indicator(1)
     def download_url(self):
         selection = self.LB.get_selection()
-        thread_dl(selection)
+        self.urlfile = urlfile(selection)
+        self.urlfile.threaded_download()
+        self.mark_indicator(2)
+    def mark_indicator(self, mstatus):
+        self.status.set(mstatus)
+        mytext = self.status.get_text()
+        self.lbl['bottom'].config(text=mytext)
 
 def main():
     root = Tk()
